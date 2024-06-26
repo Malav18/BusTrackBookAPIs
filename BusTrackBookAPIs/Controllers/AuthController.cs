@@ -37,6 +37,14 @@ public class AuthController : ControllerBase
         }
 
         var token = GenerateJwtToken(user);
+
+        //HttpContext.Session.SetString("UserId", user.UserID.ToString());
+        //HttpContext.Session.SetString("Username", user.Username);
+        //HttpContext.Session.SetString("UserRole", user.RoleID == 1 ? "User" : "Admin");
+        //HttpContext.Session.SetString("UserEmail", user.Email);
+        //HttpContext.Session.SetString("UserPhoneNumber", user.PhoneNumber);
+
+
         return Ok(new { token });
     }
 
@@ -102,7 +110,7 @@ public class AuthController : ControllerBase
         return user;
     }
 
-        private async Task CreateUserAsync(User user)
+    private async Task CreateUserAsync(User user)
     {
         using (var connection = new NpgsqlConnection(_connectionString))
         {
@@ -147,23 +155,33 @@ public class AuthController : ControllerBase
         var jwtSettings = _configuration.GetSection("Jwt");
         var key = Encoding.ASCII.GetBytes(jwtSettings["Key"]);
         var tokenHandler = new JwtSecurityTokenHandler();
+
+        var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.Name, user.Username),
+        new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
+        new Claim(ClaimTypes.Role, user.RoleID == 1 ? "User" : "Admin"),
+        new Claim(ClaimTypes.Email, user.Email)
+    };
+
+        if (!string.IsNullOrEmpty(user.PhoneNumber))
+        {
+            claims.Add(new Claim("PhoneNumber", user.PhoneNumber)); // Custom claim for phone number
+        }
+
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(new Claim[]
-            {
-            new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()), // Convert UserID to string
-            new Claim(ClaimTypes.Role, user.RoleID == 1 ? "User" : "Admin")
-            }),
+            Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddHours(1),
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
-            Issuer = jwtSettings["Issuer"],
+          
         };
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
         Console.WriteLine(token);
         return tokenHandler.WriteToken(token);
     }
+
 
 
     [HttpPost("ForgotPassword")]

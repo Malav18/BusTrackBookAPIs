@@ -1,0 +1,122 @@
+# .editorconfig for ASP.NET project
+
+# Naming rules
+dotnet_naming_rule.interface_should_be_begins_with_i.severity = suggestion
+dotnet_naming_rule.interface_should_be_begins_with_i.symbols = interface
+dotnet_naming_rule.interface_should_be_begins_with_i.style = begins_with_i
+
+dotnet_naming_rule.types_should_be_pascal_case.severity = suggestion
+dotnet_naming_rule.types_should_be_pascal_case.symbols = types
+dotnet_naming_rule.types_should_be_pascal_case.style = pascal_case
+
+dotnet_naming_rule.non_field_members_should_be_pascal_case.severity = suggestion
+dotnet_naming_rule.non_field_members_should_be_pascal_case.symbols = non_field_members
+dotnet_naming_rule.non_field_members_should_be_pascal_case.style = pascal_case
+
+# Symbol specifications
+dotnet_naming_symbols.interface.applicable_kinds = interface
+dotnet_naming_symbols.interface.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_symbols.interface.required_modifiers = 
+
+dotnet_naming_symbols.types.applicable_kinds = class, struct, interface, enum
+dotnet_naming_symbols.types.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_symbols.types.required_modifiers = 
+
+dotnet_naming_symbols.non_field_members.applicable_kinds = property, event, method
+dotnet_naming_symbols.non_field_members.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_symbols.non_field_members.required_modifiers = 
+
+# Naming styles
+dotnet_naming_style.begins_with_i.required_prefix = I
+dotnet_naming_style.begins_with_i.required_suffix = 
+dotnet_naming_style.begins_with_i.word_separator = 
+dotnet_naming_style.begins_with_i.capitalization = pascal_case  # Naming style for interfaces: Prefix 'I' followed by PascalCase
+
+dotnet_naming_style.pascal_case.required_prefix = 
+dotnet_naming_style.pascal_case.required_suffix = 
+dotnet_naming_style.pascal_case.word_separator = 
+dotnet_naming_style.pascal_case.capitalization = pascal_case  # Default naming style for types and members: PascalCase
+
+# Code simplifications
+dotnet_style_coalesce_expression = true:suggestion  # Prefer null-coalescing operator (??) over null check and assignment
+dotnet_style_null_propagation = true:suggestion  # Prefer null propagation (?.) for null checks
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggestion  # Prefer 'is null' check over comparing with 'ReferenceEquals'
+dotnet_style_prefer_auto_properties = true:silent  # Prefer auto-implemented properties when possible
+dotnet_style_object_initializer = true:suggestion  # Prefer object initializer syntax
+dotnet_style_prefer_collection_expression = true:suggestion  # Prefer collection initializer syntax
+dotnet_style_collection_initializer = true:suggestion  # Prefer collection initializer syntax
+dotnet_style_prefer_simplified_boolean_expressions = true:suggestion  # Prefer simplified boolean expressions
+dotnet_style_prefer_conditional_expression_over_assignment = true:silent  # Prefer conditional expressions over simple assignments
+dotnet_style_prefer_conditional_expression_over_return = true:silent  # Prefer conditional expressions over simple returns
+dotnet_style_operator_placement_when_wrapping = beginning_of_line  # Place operators at the beginning of lines when wrapping
+dotnet_style_explicit_tuple_names = true:suggestion  # Prefer explicit tuple names
+dotnet_style_prefer_inferred_tuple_names = true:suggestion  # Prefer inferred tuple names
+dotnet_style_prefer_inferred_anonymous_type_member_names = true:suggestion  # Prefer inferred anonymous type member names
+dotnet_style_prefer_compound_assignment = true:suggestion  # Prefer compound assignment (e.g., +=) where applicable
+dotnet_style_prefer_simplified_interpolation = true:suggestion  # Prefer simplified string interpolation
+dotnet_style_namespace_match_folder = true:suggestion  # Ensure namespaces match folder structure
+
+# Global settings
+tab_width = 4
+indent_size = 4
+end_of_line = crlf
+
+# File-specific settings for C# files
+[*.cs]
+csharp_using_directive_placement = outside_namespace:silent  # Place 'using' directives outside the namespace declaration
+csharp_prefer_simple_using_statement = true:suggestion  # Prefer simple 'using' statements
+csharp_prefer_braces = true:silent  # Prefer braces for single-line control statements
+csharp_style_namespace_declarations = block_scoped:silent  # Use block-scoped namespace declarations
+csharp_style_prefer_method_group_conversion = true:silent  # Prefer method group conversion
+csharp_style_prefer_top_level_statements = true:silent  # Prefer top-level statements (C# 9 feature)
+csharp_style_prefer_primary_constructors = true:suggestion  # Prefer primary constructors (C# 9 feature)
+csharp_style_expression_bodied_methods = false:silent  # Prefer regular methods over expression-bodied methods
+csharp_style_expression_bodied_constructors = false:silent  # Prefer regular constructors over expression-bodied constructors
+csharp_style_expression_bodied_operators = false:silent  # Prefer regular operators over expression-bodied operators
+csharp_style_expression_bodied_properties = true:silent  # Prefer expression-bodied properties where possible
+csharp_style_expression_bodied_indexers = true:silent  # Prefer expression-bodied indexers where possible
+csharp_style_expression_bodied_accessors = true:silent  # Prefer expression-bodied accessors where possible
+csharp_style_expression_bodied_lambdas = true:silent  # Prefer expression-bodied lambdas where possible
+csharp_style_expression_bodied_local_functions = false:silent  # Prefer regular local functions over expression-bodied local functions
+csharp_indent_labels = one_less_than_current# Indent labels one less than the current indentation level
+csharp_space_around_binary_operators = before_and_after# Maintain spaces around binary operators for readability
+csharp_style_throw_expression = true:suggestion  # Prefer throw expressions for throwing exceptions
+csharp_style_prefer_null_check_over_type_check = true:suggestion  # Prefer null checks over type checks when checking for null
+csharp_style_prefer_local_over_anonymous_function = true:suggestion  # Prefer local functions over anonymous functions
+csharp_prefer_simple_default_expression = true:suggestion  # Prefer simple default expressions
+csharp_style_prefer_range_operator = true:suggestion  # Prefer range operator (..) over explicit range creation
+csharp_style_prefer_index_operator = true:suggestion  # Prefer index operator ([]) over calling 'get_Item'
+csharp_style_implicit_object_creation_when_type_is_apparent = true:suggestion  # Prefer implicit object creation when the type is apparent
+csharp_style_prefer_tuple_swap = true:suggestion  # Prefer tuple swap over manual swap
+csharp_style_prefer_utf8_string_literals = true:suggestion  # Prefer UTF-8 string literals (e.g., $"string") over traditional literals
+csharp_style_inlined_variable_declaration = true:suggestion  # Prefer inlined variable declaration and assignment where possible
+csharp_style_deconstructed_variable_declaration = true:suggestion  # Prefer deconstructed variable declaration
+csharp_style_unused_value_assignment_preference = discard_variable:suggestion  # Prefer discarding variables explicitly when unused
+csharp_style_unused_value_expression_statement_preference = discard_variable:silent  # Prefer discarding variables in unused expression statements
+
+# File-specific settings for VB.NET files
+[*.vb]
+visual_basic_option_explicit = true  # Require explicit declaration of variables
+visual_basic_indentation = space  # Use spaces for indentation
+visual_basic_indent_size = 4  # Set indentation size to 4 spaces
+visual_basic_end_of_line = crlf  # Use Windows-style line endings
+
+visual_basic_style_prefer_auto_properties = true:silent  # Prefer auto-implemented properties
+visual_basic_style_implicit_line_continuation = true:suggestion  # Prefer implicit line continuation
+visual_basic_style_unused_value_expression_statement_preference = discard_variable:silent  # Prefer discarding variables in unused expression statements
+
+[*.{cs,vb}]
+dotnet_style_operator_placement_when_wrapping = beginning_of_line
+tab_width = 4
+indent_size = 4
+end_of_line = crlf
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_null_propagation = true:suggestion
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggestion
+dotnet_style_prefer_auto_properties = true:silent
+dotnet_style_object_initializer = true:suggestion
+dotnet_style_prefer_collection_expression = true:suggestion
+dotnet_style_collection_initializer = true:suggestion
+dotnet_style_prefer_simplified_boolean_expressions = true:suggestion
+dotnet_style_prefer_conditional_expression_over_assignment = true:silent
+dotnet_style_prefer_conditional_expression_over_return = true:silent

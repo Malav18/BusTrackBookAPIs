@@ -85,12 +85,12 @@ namespace BusTrackBookAPIs.Controllers
                     return BadRequest("Invalid date format. Please use 'yyyy-MM-dd'.");
                 }
 
-                var result = CalculateDistanceAndFare(startStop, endStop);
+                var result = CalculateDistanceAndFareInternal(startStop, endStop);
                 using (NpgsqlConnection connection = new NpgsqlConnection(_connectionString))
                 {
                     await connection.OpenAsync();
 
-                    using (NpgsqlCommand command = new NpgsqlCommand("SELECT * FROM fetch_buses_between_stops1(@startStop, @endStop, @travelDate)", connection))
+                    using (NpgsqlCommand command = new NpgsqlCommand("SELECT * FROM fetch_buses_between_stops(@startStop, @endStop, @travelDate)", connection))
                     {
                         command.Parameters.AddWithValue("@startStop", startStop);
                         command.Parameters.AddWithValue("@endStop", endStop);
@@ -121,6 +121,8 @@ namespace BusTrackBookAPIs.Controllers
                                     EndStopTime = reader["end_stop_time"].ToString(),
                                     ScheduleId = Convert.ToInt32(reader["scheduleid"]),
                                     StartDate = Convert.ToDateTime(reader["start_date"]),
+                                    StartSequenceNumber = Convert.ToInt32(reader["startsequencenumber"]),
+                                    EndSequenceNumber = Convert.ToInt32(reader["endsequencenumber"]),
                                     Distance = result.distance,
                                     Fare = result.fare
                                 };
@@ -136,7 +138,7 @@ namespace BusTrackBookAPIs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
         }
 
@@ -242,7 +244,20 @@ namespace BusTrackBookAPIs.Controllers
 
 
 
-        private (double distance, double fare) CalculateDistanceAndFare(int fromCityId, int toCityId)
+        [HttpGet("distance/calculate")]
+        public IActionResult CalculateDistanceAndFare([FromQuery] int fromCityId, [FromQuery] int toCityId)
+        {
+            var result = CalculateDistanceAndFareInternal(fromCityId, toCityId);
+            if (result.Item1 == 0 && result.Item2 == 0)
+            {
+                return BadRequest("Invalid city IDs");
+            }
+            return Ok(new { distance = result.Item1, fare = result.Item2 });
+        }
+
+
+
+        private (double distance, double fare) CalculateDistanceAndFareInternal(int fromCityId, int toCityId)
         {
             try
             {
@@ -333,7 +348,7 @@ namespace BusTrackBookAPIs.Controllers
 
 
         [HttpGet("seats")]
-        public async Task<ActionResult<IEnumerable<object>>> GetSeatsStatus(int busId, DateOnly startDate)
+        public async Task<ActionResult<IEnumerable<object>>> GetSeatsStatus(int busId, DateOnly startDate, int startSequenceNumber, int endSequenceNumber)
         {
             List<object> seatsStatus = new List<object>();
 
@@ -343,10 +358,12 @@ namespace BusTrackBookAPIs.Controllers
                 {
                     await connection.OpenAsync();
 
-                    using (NpgsqlCommand command = new NpgsqlCommand("SELECT * FROM get_seats_status(@busId, @startDate)", connection))
+                    using (NpgsqlCommand command = new NpgsqlCommand("SELECT * FROM get_seats_status(@busId, @startDate, @startSequenceNumber, @endSequenceNumber)", connection))
                     {
                         command.Parameters.AddWithValue("@busId", busId);
                         command.Parameters.AddWithValue("@startDate", NpgsqlTypes.NpgsqlDbType.Date).Value = startDate;
+                        command.Parameters.AddWithValue("@startSequenceNumber", startSequenceNumber);
+                        command.Parameters.AddWithValue("@endSequenceNumber", endSequenceNumber);
 
                         using (NpgsqlDataReader reader = await command.ExecuteReaderAsync())
                         {

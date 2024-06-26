@@ -1,28 +1,44 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
+// Add services
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddSwaggerGen(option =>
+// Add distributed memory cache
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddHttpContextAccessor();
+
+// Configure session state
+builder.Services.AddSession(options =>
 {
-    option.SwaggerDoc("v1", new OpenApiInfo { Title = "Demo API", Version = "v1" });
-    option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // Session timeout
+    options.Cookie.HttpOnly = true; // HTTP only cookie
+    options.Cookie.IsEssential = true; // Essential for session
+});
+
+// Configure Swagger/OpenAPI
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Demo API", Version = "v1" });
+
+    // Configure JWT Bearer authentication in Swagger
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
         Description = "Please enter a valid token",
         Name = "Authorization",
         Type = SecuritySchemeType.Http,
-  
         Scheme = "Bearer"
     });
-    option.AddSecurityRequirement(new OpenApiSecurityRequirement
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
@@ -38,6 +54,7 @@ builder.Services.AddSwaggerGen(option =>
     });
 });
 
+// Configure JWT authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -46,30 +63,47 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration.GetSection("Jwt:Key").Get<string>()!)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration.GetSection("Jwt:Key").Value)),
             ValidateIssuer = false,
             ValidateAudience = false
         };
     });
 
-
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Demo API v1");
+    });
+}
+else
+{
+    app.UseExceptionHandler("/Error");
+    app.UseHsts();
 }
 
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+// Use session middleware
+app.UseSession();
+
+app.UseRouting();
+
+// Enable CORS for your frontend application
 app.UseCors(options => options
     .WithOrigins("http://localhost:4200")
     .AllowAnyHeader()
     .AllowAnyMethod()
     .AllowCredentials());
 
-app.UseHttpsRedirection();
-//app.UseAuthentication();
+// Use authentication and authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
