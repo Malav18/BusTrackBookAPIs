@@ -73,13 +73,30 @@ namespace BusTrackBookAPIs.Controllers
             {
                 From = new MailAddress(contactForm.Email),
                 Subject = contactForm.Subject,
-                Body = $"Name: {contactForm.Name}\nEmail: {contactForm.Email}\nSubject: {contactForm.Subject}\nMessage: {contactForm.Message}",
-                IsBodyHtml = false,
+                IsBodyHtml = true,
             };
+
+            // Construct HTML body for team email
+            string htmlBody = $@"
+        <html>
+        <body>
+            <h2>New Contact Form Submission</h2>
+            <p><strong>Name:</strong> {contactForm.Name}</p>
+            <p><strong>Email:</strong> {contactForm.Email}</p>
+            <p><strong>Subject:</strong> {contactForm.Subject}</p>
+            <p><strong>Message:</strong></p>
+            <p>{contactForm.Message}</p>
+        </body>
+        </html>
+    ";
+
+            mailMessageToTeam.Body = htmlBody;
+
             mailMessageToTeam.To.Add("malav.amnex@gmail.com");
 
             await smtpClient.SendMailAsync(mailMessageToTeam);
         }
+
 
         private async Task SendEmailToUser(ContactForm contactForm)
         {
@@ -94,12 +111,29 @@ namespace BusTrackBookAPIs.Controllers
             {
                 From = new MailAddress("malav.amnex@gmail.com"),
                 Subject = "We have received your message",
-                Body = $"Dear {contactForm.Name},\n\nThank you for reaching out to us. We have received your message and will get back to you soon.\n\nHere is a copy of your message:\n\n{contactForm.Message}\n\nBest regards,\nAmnex",
-                IsBodyHtml = false,
+                IsBodyHtml = true,
             };
+
+            // Construct HTML body for user email
+            string htmlBody = $@"
+        <html>
+        <body>
+            <p>Dear {contactForm.Name},</p>
+            <p>Thank you for reaching out to us. We have received your message and will get back to you soon.</p>
+            <p>Here is a copy of your message:</p>
+            <blockquote>{contactForm.Message}</blockquote>
+            <br/>
+            <p>Best regards,<br/>Amnex</p>
+        </body>
+        </html>
+    ";
+
+            mailMessageToUser.Body = htmlBody;
+
             mailMessageToUser.To.Add(contactForm.Email);
 
             await smtpClient.SendMailAsync(mailMessageToUser);
         }
+
     }
 }

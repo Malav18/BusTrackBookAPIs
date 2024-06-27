@@ -1,23 +1,28 @@
-﻿public class TicketBookingDetails
+﻿public class PaymentDetails
 {
+    public string paymentId { get; set; }
+    public int userId { get; set; }
+    public string username { get; set; }
     public string userEmail { get; set; }
-    public string userId { get; set; }
-    public string PNR { get; set; }
-    public string PaymentId { get; set; }
-    public string Mode { get; set; }
-    public decimal Total { get; set; }
-    public string BusName { get; set; }
-    public string DriverName { get; set; }
-    public string StartCity { get; set; }
-    public string EndCity { get; set; }
-    public DateTime StartDate { get; set; }
-    public string StartTime { get; set; } // Change to string if it's in "HH:mm:ss" format
-    public List<SeatDetails> SelectedSeats { get; set; }
+    public string mode { get; set; }
+    public decimal total { get; set; }
+    public string busName { get; set; }
+    public int scheduleId { get; set; }
+    public string busNumber { get; set; }
+    public string driverName { get; set; }
+    public string startCity { get; set; }
+    public int startSequenceNumber { get; set; }
+    public int endSequenceNumber { get; set; }
+    public string endCity { get; set; }
+    public DateTime startDate { get; set; }
+    public string startTime { get; set; }
+    public List<SeatDetails> selectedSeats { get; set; }
+    public string pnr { get; set; }
 }
 
 public class SeatDetails
 {
-    public string SeatNumber { get; set; }
-    public string Name { get; set; }
-    public string PhoneNumber { get; set; }
+    public string name { get; set; }
+    public string phoneNumber { get; set; }
+    public int seatNumber { get; set; }
 }

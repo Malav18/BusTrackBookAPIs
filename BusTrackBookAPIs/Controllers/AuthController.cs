@@ -270,7 +270,7 @@ public class AuthController : ControllerBase
 
                 MailMessage mailMessage = new MailMessage("malav.amnex@gmail.com", email)
                 {
-                    Subject = "AMS Reset Password",
+                    Subject = "AMNEX Reset Password",
                     Body = GetPasswordResetEmailTemplate(resetPasswordLink),
                     IsBodyHtml = true
                 };
@@ -346,20 +346,37 @@ public class AuthController : ControllerBase
         }
     }
 
-    private string GetPasswordResetEmailTemplate(string resetPasswordLink)
+
+    private static string GetPasswordResetEmailTemplate(string resetPasswordLink)
     {
-        // Generate the HTML template for the password reset email
-        return $@"
-                <html>
-                <body>
-                    <p>You have requested a password reset.</p>
-                    <p>Please click the following link to reset your password:</p>
-                    <a href='{resetPasswordLink}'>{resetPasswordLink}</a>
-                    <p>If you did not request this, you can safely ignore this email.</p>
-                </body>
-                </html>
-            ";
+        // Here you can define your HTML email template with placeholders for password
+        string template = @"
+    <html>
+    <head>
+        
+    </head>
+    <body>
+        
+        <p>You have requested to reset your password. Please click on the following button to reset your password:</p>
+        <a href='{0}' style='display: inline-block; padding: 10px 20px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 5px;'>Reset Password</a>
+        <p>Alternatively, you can copy and paste the following link into your browser:</p>
+        <p><a href='{0}'>{0}</a></p>
+        <p>If you did not request a password reset, please ignore this email.</p>
+        <p>Please keep your new password secure and do not share it with anyone.</p>
+        <hr>
+        <p>Contact Information:</p>
+        <p>Name: Malav Vora</p>
+        <p>Role: Intern - Integrated</p>
+        <p>Phone: (+91)-9106632795</p>
+        <p>Website: <a href='http://www.amnex.com'>www.amnex.com</a></p>
+        <p>Company: Amnex Infotechnologies Pvt. Ltd.</p>
+        <p>Address: Wing-B, 1201/1202/1301, Mondeal Heights, S.G.Highway, Ahmedabad - 380015</p>
+    </body>
+    </html>";
+
+        return string.Format(template, resetPasswordLink);
     }
+
 }
 
 

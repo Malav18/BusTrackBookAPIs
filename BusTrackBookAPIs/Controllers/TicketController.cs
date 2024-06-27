@@ -18,7 +18,7 @@ namespace BusTrackBookAPIs.Controllers
         }
 
         [HttpPost("sendticketemail")]
-        public async Task<IActionResult> SendTicketEmail([FromBody] TicketBookingDetails bookingDetails)
+        public async Task<IActionResult> SendTicketEmail([FromBody] PaymentDetails bookingDetails)
         {
             try
             {
@@ -69,60 +69,64 @@ namespace BusTrackBookAPIs.Controllers
             }
         }
 
-        private string ConstructTicketEmail(TicketBookingDetails bookingDetails)
+        private string ConstructTicketEmail(PaymentDetails bookingDetails)
         {
             // Construct your HTML email based on the provided layout
             string htmlMessage = $@"
     <html>
     <body style='font-family: Arial, sans-serif;'>
         <h2 style='color: #4CAF50;'>Bus Ticket Booking Confirmation</h2>
-        <p>Hi {bookingDetails.SelectedSeats.FirstOrDefault()?.Name},</p>
+        <p>Hi {bookingDetails.username},</p>
         <p>Your bus ticket booking has been confirmed. See the details below:</p>
         <table style='border-collapse: collapse; width: 100%;'>
             <tr>
                 <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>PNR No.</th>
-                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.PNR}</td>
+                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.pnr}</td>
             </tr>
             <tr>
                 <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>Bus Name</th>
-                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.BusName}</td>
+                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.busName}</td>
+            </tr>
+ <tr>
+                <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>Bus Number</th>
+                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.busNumber}</td>
             </tr>
             <tr>
                 <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>Driver Name</th>
-                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.DriverName}</td>
+                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.driverName}</td>
             </tr>
             <tr>
                 <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>Start City</th>
-                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.StartCity}</td>
+                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.startCity}</td>
             </tr>
             <tr>
                 <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>End City</th>
-                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.EndCity}</td>
+                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.endCity}</td>
             </tr>
             <tr>
                 <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>Start Date</th>
-                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.StartDate.ToString("yyyy-MM-dd")}</td>
+                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.startDate.ToString("yyyy-MM-dd")}</td>
             </tr>
             <tr>
                 <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>Start Time</th>
-                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.StartTime}</td>
+                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.startDate}</td>
             </tr>
             <tr>
                 <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>Total Fare</th>
-                <td style='padding: 8px; border: 1px solid #ddd;'>₹ {bookingDetails.Total}</td>
+                <td style='padding: 8px; border: 1px solid #ddd;'>₹ {bookingDetails.total}</td>
             </tr>
             <tr>
                 <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>Payment ID</th>
-                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.PaymentId}</td>
+                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.paymentId}</td>
             </tr>
             <tr>
                 <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>Mode of Payment</th>
-                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.Mode}</td>
+                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.mode}</td>
             </tr>
             <tr>
                 <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>Seats</th>
                 <td style='padding: 8px; border: 1px solid #ddd;'>
-                    {string.Join("<br>", bookingDetails.SelectedSeats.Select(seat => $"Seat: {seat.SeatNumber}, Name: {seat.Name}, Phone: {seat.PhoneNumber}"))}
+                    {string.Join("<br>", bookingDetails.selectedSeats.Select(seat => $"Seat: {seat.seatNumber}, Name: {seat.name}, Phone: {seat.phoneNumber}"))}
                 </td>
             </tr>
         </table>
