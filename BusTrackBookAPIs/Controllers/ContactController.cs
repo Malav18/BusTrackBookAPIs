@@ -6,9 +6,11 @@ using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using BusTrackBookAPIs.Model;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BusTrackBookAPIs.Controllers
 {
+    [Authorize(Roles = "User")]
     [Route("[controller]")]
     [ApiController]
     public class ContactController : ControllerBase
@@ -76,18 +78,32 @@ namespace BusTrackBookAPIs.Controllers
                 IsBodyHtml = true,
             };
 
-            // Construct HTML body for team email
+            // Enhanced HTML body for team email
             string htmlBody = $@"
-        <html>
-        <body>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f9; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }}
+            h2 {{ color: #333; }}
+            p {{ color: #555; line-height: 1.6; }}
+            .footer {{ margin-top: 20px; text-align: center; color: #888; font-size: 12px; }}
+        </style>
+    </head>
+    <body>
+        <div class='container'>
             <h2>New Contact Form Submission</h2>
             <p><strong>Name:</strong> {contactForm.Name}</p>
             <p><strong>Email:</strong> {contactForm.Email}</p>
             <p><strong>Subject:</strong> {contactForm.Subject}</p>
             <p><strong>Message:</strong></p>
             <p>{contactForm.Message}</p>
-        </body>
-        </html>
+            <div class='footer'>
+                <p>This email was generated automatically. Please do not reply to this email.</p>
+            </div>
+        </div>
+    </body>
+    </html>
     ";
 
             mailMessageToTeam.Body = htmlBody;
@@ -96,7 +112,6 @@ namespace BusTrackBookAPIs.Controllers
 
             await smtpClient.SendMailAsync(mailMessageToTeam);
         }
-
 
         private async Task SendEmailToUser(ContactForm contactForm)
         {
@@ -114,18 +129,31 @@ namespace BusTrackBookAPIs.Controllers
                 IsBodyHtml = true,
             };
 
-            // Construct HTML body for user email
+            // Enhanced HTML body for user email
             string htmlBody = $@"
-        <html>
-        <body>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f9; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }}
+            p {{ color: #555; line-height: 1.6; }}
+            .footer {{ margin-top: 20px; text-align: center; color: #888; font-size: 12px; }}
+        </style>
+    </head>
+    <body>
+        <div class='container'>
             <p>Dear {contactForm.Name},</p>
             <p>Thank you for reaching out to us. We have received your message and will get back to you soon.</p>
             <p>Here is a copy of your message:</p>
-            <blockquote>{contactForm.Message}</blockquote>
+            <blockquote style='background-color: #f9f9f9; padding: 10px; border-left: 4px solid #ccc;'>{contactForm.Message}</blockquote>
             <br/>
             <p>Best regards,<br/>Amnex</p>
-        </body>
-        </html>
+            <div class='footer'>
+                <p>This email was generated automatically. Please do not reply to this email.</p>
+            </div>
+        </div>
+    </body>
+    </html>
     ";
 
             mailMessageToUser.Body = htmlBody;
@@ -134,6 +162,7 @@ namespace BusTrackBookAPIs.Controllers
 
             await smtpClient.SendMailAsync(mailMessageToUser);
         }
+
 
     }
 }
