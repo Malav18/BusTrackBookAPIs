@@ -377,6 +377,62 @@ public class AuthController : ControllerBase
         return string.Format(template, resetPasswordLink);
     }
 
+
+
+
+
+
+
+    [HttpGet("userDetails/{userId}")]
+    public async Task<ActionResult<UserDetails>> GetUserDetails(int userId)
+    {
+        try
+        {
+            using (NpgsqlConnection connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                using (NpgsqlCommand command = new NpgsqlCommand("SELECT * FROM fetch_user_details(@userId)", connection))
+                {
+                    command.Parameters.AddWithValue("@userId", userId);
+
+                    using (NpgsqlDataReader reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            var userDetails = new UserDetails
+                            {
+                                UserID = reader.GetInt32(reader.GetOrdinal("userid")),
+                                Username = reader.GetString(reader.GetOrdinal("username")),
+                                Password = reader.GetString(reader.GetOrdinal("password")),
+                                Email = reader.GetString(reader.GetOrdinal("email")),
+                                PhoneNumber = reader.GetString(reader.GetOrdinal("phonenumber")),
+                                RoleID = reader.GetInt32(reader.GetOrdinal("roleid")),
+                                Role = reader.GetString(reader.GetOrdinal("role")),
+                                ProfilePicture = reader.GetString(reader.GetOrdinal("profilepicture")),
+                                CreateDate = reader.GetDateTime(reader.GetOrdinal("createdate")),
+                                ModifyDate = reader.IsDBNull(reader.GetOrdinal("modifiedate")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("modifiedate")),
+                                IsDeleted = reader.GetBoolean(reader.GetOrdinal("isdeleted")),
+                                ResetToken = reader.IsDBNull(reader.GetOrdinal("resettoken")) ? null : reader.GetString(reader.GetOrdinal("resettoken")),
+                                ResetTokenExpiry = reader.IsDBNull(reader.GetOrdinal("resettokenexpiry")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("resettokenexpiry"))
+                            };
+
+                            return Ok(userDetails);
+                        }
+                        else
+                        {
+                            return NotFound("User not found.");
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, $"Error fetching user details: {ex.Message}");
+        }
+    }
+
 }
 
 

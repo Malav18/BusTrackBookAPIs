@@ -8,6 +8,7 @@ using System.Data;
 
 namespace BusTrackBookAPIs.Controllers
 {
+    //[Authorize(Policy = "AdminOnly")]
     [Route("[controller]")]
     [ApiController]
     public class AdminController : Controller
@@ -31,7 +32,7 @@ namespace BusTrackBookAPIs.Controllers
             {
                 await connection.OpenAsync();
 
-                using (var command = new NpgsqlCommand("SELECT * FROM drivers WHERE isdeleted = FALSE", connection))
+                using (var command = new NpgsqlCommand("SELECT * FROM drivers", connection))
                 {
                     using (var reader = await command.ExecuteReaderAsync())
                     {
@@ -43,7 +44,7 @@ namespace BusTrackBookAPIs.Controllers
                                 DriverName = reader.GetString(reader.GetOrdinal("drivername")),
                                 PhoneNumber = reader.IsDBNull(reader.GetOrdinal("phonenumber")) ? null : reader.GetString(reader.GetOrdinal("phonenumber")),
                                 DrivingLicenseNumber = reader.GetString(reader.GetOrdinal("drivinglicensenumber")),
-                                DateOfBirth = (DateTime)(reader.IsDBNull(reader.GetOrdinal("dateofbirth")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("dateofbirth"))),
+                                DateOfBirth = reader.IsDBNull(reader.GetOrdinal("dateofbirth")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("dateofbirth")),
                                 AddressStreet = reader.IsDBNull(reader.GetOrdinal("addressstreet")) ? null : reader.GetString(reader.GetOrdinal("addressstreet")),
                                 AddressCity = reader.IsDBNull(reader.GetOrdinal("addresscity")) ? null : reader.GetString(reader.GetOrdinal("addresscity")),
                                 AddressState = reader.IsDBNull(reader.GetOrdinal("addressstate")) ? null : reader.GetString(reader.GetOrdinal("addressstate")),
@@ -59,6 +60,47 @@ namespace BusTrackBookAPIs.Controllers
             }
 
             return Ok(drivers);
+        }
+
+        [HttpGet("getbusdrivers")]
+        public async Task<ActionResult<IEnumerable<Driver>>> GetBusDrivers()
+        {
+            var drivers = new List<Driver>();
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                using (var command = new NpgsqlCommand("SELECT * FROM drivers", connection))
+                {
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            drivers.Add(new Driver
+                            {
+                                DriverId = reader.GetInt32(reader.GetOrdinal("driverid")),
+                                DriverName = reader.GetString(reader.GetOrdinal("drivername")),
+                                PhoneNumber = reader.IsDBNull(reader.GetOrdinal("phonenumber")) ? null : reader.GetString(reader.GetOrdinal("phonenumber")),
+                                DrivingLicenseNumber = reader.GetString(reader.GetOrdinal("drivinglicensenumber")),
+                                DateOfBirth = reader.IsDBNull(reader.GetOrdinal("dateofbirth")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("dateofbirth")),
+                                AddressStreet = reader.IsDBNull(reader.GetOrdinal("addressstreet")) ? null : reader.GetString(reader.GetOrdinal("addressstreet")),
+                                AddressCity = reader.IsDBNull(reader.GetOrdinal("addresscity")) ? null : reader.GetString(reader.GetOrdinal("addresscity")),
+                                AddressState = reader.IsDBNull(reader.GetOrdinal("addressstate")) ? null : reader.GetString(reader.GetOrdinal("addressstate")),
+                                AddressZipCode = reader.IsDBNull(reader.GetOrdinal("addresszipcode")) ? null : reader.GetString(reader.GetOrdinal("addresszipcode")),
+                                EmergencyContact = reader.IsDBNull(reader.GetOrdinal("emergencycontact")) ? null : reader.GetString(reader.GetOrdinal("emergencycontact")),
+                                CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdat")),
+                                ModifiedAt = reader.IsDBNull(reader.GetOrdinal("modifiedat")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("modifiedat")),
+                                IsDeleted = reader.GetBoolean(reader.GetOrdinal("isdeleted"))
+                            });
+                        }
+                    }
+                }
+            }
+
+            return Ok(drivers);
+
+           
         }
 
         [HttpGet("{id}")]
@@ -441,21 +483,22 @@ namespace BusTrackBookAPIs.Controllers
             return NoContent();
         }
 
-        [HttpPut("editroute/{id}")]
-        public async Task<IActionResult> PutRoute(int id, RouteModel route)
+        [HttpPut("editroute")]
+        public async Task<IActionResult> PutRoute(RouteModel route)
         {
             using (NpgsqlConnection connection = new NpgsqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
 
-                string sql = "SELECT public.edit_route(@routeid, @routename, @startcityid, @endcityid)";
+                string sql = "SELECT public.edit_route(@routeid, @routename, @startcityid, @endcityid, @isdeleted)";
 
                 using (NpgsqlCommand command = new NpgsqlCommand(sql, connection))
                 {
-                    command.Parameters.AddWithValue("@routeid", id);
+                    command.Parameters.AddWithValue("@routeid", route.RouteId);
                     command.Parameters.AddWithValue("@routename", route.RouteName);
                     command.Parameters.AddWithValue("@startcityid", route.StartCityId);
                     command.Parameters.AddWithValue("@endcityid", route.EndCityId);
+                    command.Parameters.AddWithValue("@isdeleted", route.IsDeleted);
 
                     await command.ExecuteNonQueryAsync();
                 }
@@ -600,6 +643,406 @@ namespace BusTrackBookAPIs.Controllers
                     }
                 }
             }
+        }
+
+
+        [HttpGet("getallbuses")]
+        public async Task<ActionResult<IEnumerable<Bus>>> GetAllBuses()
+        {
+            var buses = new List<Bus>();
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                string query = @"
+            SELECT 
+                b.busid, b.busnumber, b.routeid, b.driverid, b.capacity, 
+                b.manufacturer, b.model, b.year, b.currentlocation, 
+                b.lastmaintenancedate, b.nextmaintenancedate, b.createdat, 
+                b.modifiedat, b.isdeleted, 
+                d.drivername, r.routename
+            FROM buses b
+            LEFT JOIN drivers d ON b.driverid = d.driverid
+            LEFT JOIN routes r ON b.routeid = r.routeid
+            WHERE b.isdeleted = FALSE";
+
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            buses.Add(new Bus
+                            {
+                                BusId = reader.GetInt32(reader.GetOrdinal("busid")),
+                                BusNumber = reader.GetString(reader.GetOrdinal("busnumber")),
+                                RouteId = reader.IsDBNull(reader.GetOrdinal("routeid")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("routeid")),
+                                DriverId = reader.IsDBNull(reader.GetOrdinal("driverid")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("driverid")),
+                                Capacity = reader.IsDBNull(reader.GetOrdinal("capacity")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("capacity")),
+                                Manufacturer = reader.IsDBNull(reader.GetOrdinal("manufacturer")) ? null : reader.GetString(reader.GetOrdinal("manufacturer")),
+                                Model = reader.IsDBNull(reader.GetOrdinal("model")) ? null : reader.GetString(reader.GetOrdinal("model")),
+                                Year = reader.IsDBNull(reader.GetOrdinal("year")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("year")),
+                                CurrentLocation = reader.IsDBNull(reader.GetOrdinal("currentlocation")) ? null : reader.GetString(reader.GetOrdinal("currentlocation")),
+                                LastMaintenanceDate = reader.IsDBNull(reader.GetOrdinal("lastmaintenancedate")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("lastmaintenancedate")),
+                                NextMaintenanceDate = reader.IsDBNull(reader.GetOrdinal("nextmaintenancedate")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("nextmaintenancedate")),
+                                CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdat")),
+                                ModifiedAt = reader.IsDBNull(reader.GetOrdinal("modifiedat")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("modifiedat")),
+                                IsDeleted = reader.GetBoolean(reader.GetOrdinal("isdeleted")),
+                                DriverName = reader.IsDBNull(reader.GetOrdinal("drivername")) ? null : reader.GetString(reader.GetOrdinal("drivername")),
+                                RouteName = reader.IsDBNull(reader.GetOrdinal("routename")) ? null : reader.GetString(reader.GetOrdinal("routename"))
+                            });
+                        }
+                    }
+                }
+            }
+
+            return Ok(buses);
+        }
+
+
+
+
+
+        [HttpGet("getbusbyid/{id}")]
+        public async Task<ActionResult<Bus>> GetBusById(int id)
+        {
+            Bus bus = null;
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                string query = @"
+            SELECT 
+                b.busid, b.busnumber, b.routeid, b.driverid, b.capacity, 
+                b.manufacturer, b.model, b.year, b.currentlocation, 
+                b.lastmaintenancedate, b.nextmaintenancedate, b.createdat, 
+                b.modifiedat, b.isdeleted, 
+                d.drivername, r.routename
+            FROM buses b
+            LEFT JOIN drivers d ON b.driverid = d.driverid
+            LEFT JOIN routes r ON b.routeid = r.routeid
+            WHERE b.busid = @BusId AND b.isdeleted = FALSE";
+
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("BusId", id);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            bus = new Bus
+                            {
+                                BusId = reader.GetInt32(reader.GetOrdinal("busid")),
+                                BusNumber = reader.GetString(reader.GetOrdinal("busnumber")),
+                                RouteId = reader.IsDBNull(reader.GetOrdinal("routeid")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("routeid")),
+                                DriverId = reader.IsDBNull(reader.GetOrdinal("driverid")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("driverid")),
+                                Capacity = reader.IsDBNull(reader.GetOrdinal("capacity")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("capacity")),
+                                Manufacturer = reader.IsDBNull(reader.GetOrdinal("manufacturer")) ? null : reader.GetString(reader.GetOrdinal("manufacturer")),
+                                Model = reader.IsDBNull(reader.GetOrdinal("model")) ? null : reader.GetString(reader.GetOrdinal("model")),
+                                Year = reader.IsDBNull(reader.GetOrdinal("year")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("year")),
+                                CurrentLocation = reader.IsDBNull(reader.GetOrdinal("currentlocation")) ? null : reader.GetString(reader.GetOrdinal("currentlocation")),
+                                LastMaintenanceDate = reader.IsDBNull(reader.GetOrdinal("lastmaintenancedate")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("lastmaintenancedate")),
+                                NextMaintenanceDate = reader.IsDBNull(reader.GetOrdinal("nextmaintenancedate")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("nextmaintenancedate")),
+                                CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdat")),
+                                ModifiedAt = reader.IsDBNull(reader.GetOrdinal("modifiedat")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("modifiedat")),
+                                IsDeleted = reader.GetBoolean(reader.GetOrdinal("isdeleted")),
+                                DriverName = reader.IsDBNull(reader.GetOrdinal("drivername")) ? null : reader.GetString(reader.GetOrdinal("drivername")),
+                                RouteName = reader.IsDBNull(reader.GetOrdinal("routename")) ? null : reader.GetString(reader.GetOrdinal("routename"))
+                            };
+                        }
+                    }
+                }
+            }
+
+            if (bus == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(bus);
+        }
+
+
+
+
+
+        [HttpPost("addbus")]
+        public async Task<ActionResult> AddBus([FromBody] Bus bus)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                using (var command = new NpgsqlCommand("INSERT INTO buses (busnumber, routeid, driverid, capacity, manufacturer, model, year, currentlocation, lastmaintenancedate, nextmaintenancedate, createdat, isdeleted) VALUES (@BusNumber, @RouteId, @DriverId, @Capacity, @Manufacturer, @Model, @Year, @CurrentLocation, @LastMaintenanceDate, @NextMaintenanceDate, @CreatedAt, @IsDeleted) RETURNING busid", connection))
+                {
+                    command.Parameters.AddWithValue("@BusNumber", bus.BusNumber);
+                    command.Parameters.AddWithValue("@RouteId", bus.RouteId ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@DriverId", bus.DriverId ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@Capacity", bus.Capacity ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@Manufacturer", bus.Manufacturer ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@Model", bus.Model ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@Year", bus.Year ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@CurrentLocation", bus.CurrentLocation ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@LastMaintenanceDate", bus.LastMaintenanceDate ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@NextMaintenanceDate", bus.NextMaintenanceDate ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@CreatedAt", DateTime.UtcNow);
+                    command.Parameters.AddWithValue("@IsDeleted", false);
+
+                    bus.BusId = (int)await command.ExecuteScalarAsync();
+                }
+            }
+
+            return CreatedAtAction(nameof(GetBusById), new { id = bus.BusId }, bus);
+        }
+
+
+
+
+        [HttpPut("updatebus/{id}")]
+        public async Task<ActionResult> UpdateBus(int id, [FromBody] Bus bus)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                using (var command = new NpgsqlCommand("UPDATE buses SET busnumber = @BusNumber, routeid = @RouteId, driverid = @DriverId, capacity = @Capacity, manufacturer = @Manufacturer, model = @Model, year = @Year, currentlocation = @CurrentLocation, lastmaintenancedate = @LastMaintenanceDate, nextmaintenancedate = @NextMaintenanceDate, modifiedat = @ModifiedAt WHERE busid = @BusId", connection))
+                {
+                    command.Parameters.AddWithValue("BusId", id);
+                    command.Parameters.AddWithValue("BusNumber", bus.BusNumber);
+                    command.Parameters.AddWithValue("RouteId", bus.RouteId ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("DriverId", bus.DriverId ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("Capacity", bus.Capacity ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("Manufacturer", bus.Manufacturer ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("Model", bus.Model ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("Year", bus.Year ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("CurrentLocation", bus.CurrentLocation ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("LastMaintenanceDate", bus.LastMaintenanceDate ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("NextMaintenanceDate", bus.NextMaintenanceDate ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("ModifiedAt", DateTime.UtcNow);
+
+                    var rowsAffected = await command.ExecuteNonQueryAsync();
+                    if (rowsAffected == 0)
+                    {
+                        return NotFound();
+                    }
+                }
+            }
+
+            return NoContent();
+        }
+
+
+
+        [HttpDelete("deletebus/{id}")]
+        public async Task<ActionResult> DeleteBus(int id)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                using (var command = new NpgsqlCommand("UPDATE buses SET isdeleted = TRUE WHERE busid = @BusId", connection))
+                {
+                    command.Parameters.AddWithValue("BusId", id);
+
+                    var rowsAffected = await command.ExecuteNonQueryAsync();
+                    if (rowsAffected == 0)
+                    {
+                        return NotFound();
+                    }
+                }
+            }
+
+            return NoContent();
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        [HttpGet("getallschedules")]
+        public async Task<ActionResult<IEnumerable<BusScheduleModel>>> GetAllSchedules()
+        {
+            var schedules = new List<BusScheduleModel>();
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                string query = @"
+                    SELECT bs.*, b.busnumber, d.drivername, r.routename
+                    FROM bus_schedules bs
+                    JOIN buses b ON bs.busid = b.busid
+                    LEFT JOIN drivers d ON b.driverid = d.driverid
+                    LEFT JOIN routes r ON b.routeid = r.routeid";
+
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            schedules.Add(new BusScheduleModel
+                            {
+                                ScheduleId = reader.GetInt32(reader.GetOrdinal("scheduleid")),
+                                BusId = reader.GetInt32(reader.GetOrdinal("busid")),
+                                StartDate = reader.IsDBNull(reader.GetOrdinal("start_date")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("start_date")),
+                                StartTime = reader.IsDBNull(reader.GetOrdinal("start_time")) ? (TimeSpan?)null : reader.GetTimeSpan(reader.GetOrdinal("start_time")),
+                                StartDateTime = reader.IsDBNull(reader.GetOrdinal("start_date_time")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("start_date_time")),
+                                BusNumber = reader.GetString(reader.GetOrdinal("busnumber")),
+                                DriverName = reader.IsDBNull(reader.GetOrdinal("drivername")) ? null : reader.GetString(reader.GetOrdinal("drivername")),
+                                RouteName = reader.IsDBNull(reader.GetOrdinal("routename")) ? null : reader.GetString(reader.GetOrdinal("routename"))
+                            });
+                        }
+                    }
+                }
+            }
+
+            return Ok(schedules);
+        }
+
+        [HttpGet("getschedulebyid/{id}")]
+        public async Task<ActionResult<BusScheduleModel>> GetScheduleById(int id)
+        {
+            BusScheduleModel schedule = null;
+
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                string query = @"
+                    SELECT bs.*, b.busnumber, d.drivername, r.routename
+                    FROM bus_schedules bs
+                    JOIN buses b ON bs.busid = b.busid
+                    LEFT JOIN drivers d ON b.driverid = d.driverid
+                    LEFT JOIN routes r ON b.routeid = r.routeid
+                    WHERE bs.scheduleid = @ScheduleId";
+
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("ScheduleId", id);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            schedule = new BusScheduleModel
+                            {
+                                ScheduleId = reader.GetInt32(reader.GetOrdinal("scheduleid")),
+                                BusId = reader.GetInt32(reader.GetOrdinal("busid")),
+                                StartDate = reader.IsDBNull(reader.GetOrdinal("start_date")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("start_date")),
+                                StartTime = reader.IsDBNull(reader.GetOrdinal("start_time")) ? (TimeSpan?)null : reader.GetTimeSpan(reader.GetOrdinal("start_time")),
+                                StartDateTime = reader.IsDBNull(reader.GetOrdinal("start_date_time")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("start_date_time")),
+                                BusNumber = reader.GetString(reader.GetOrdinal("busnumber")),
+                                DriverName = reader.IsDBNull(reader.GetOrdinal("drivername")) ? null : reader.GetString(reader.GetOrdinal("drivername")),
+                                RouteName = reader.IsDBNull(reader.GetOrdinal("routename")) ? null : reader.GetString(reader.GetOrdinal("routename"))
+                            };
+                        }
+                    }
+                }
+            }
+
+            if (schedule == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(schedule);
+        }
+
+        [HttpPost("addschedule")]
+        public async Task<ActionResult> AddSchedule([FromBody] BusScheduleAddUpdate schedule)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                string query = @"
+            INSERT INTO bus_schedules (busid, start_date, start_time, start_date_time)
+            VALUES (@BusId, @StartDate, @StartTime, @StartDateTime)
+            RETURNING scheduleid";
+
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("BusId", schedule.BusId);
+                    command.Parameters.AddWithValue("StartDate", schedule.StartDate); // Use the derived date
+                    command.Parameters.AddWithValue("StartTime", schedule.StartTime); // Use the derived time
+                    command.Parameters.AddWithValue("StartDateTime", schedule.StartDateTime);
+
+                    schedule.ScheduleId = (int)await command.ExecuteScalarAsync();
+                }
+            }
+
+            return CreatedAtAction(nameof(GetScheduleById), new { id = schedule.ScheduleId }, schedule);
+        }
+
+        [HttpPut("updateschedule/{id}")]
+        public async Task<ActionResult> UpdateSchedule(int id, [FromBody] BusScheduleAddUpdate schedule)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                string query = @"
+    UPDATE bus_schedules
+    SET busid = @BusId, start_date = @StartDate, start_time = @StartTime, start_date_time = @StartDateTime
+    WHERE scheduleid = @ScheduleId";
+
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("ScheduleId", id);
+                    command.Parameters.AddWithValue("BusId", schedule.BusId);
+                    command.Parameters.AddWithValue("StartDate", schedule.StartDate); // Use the derived date
+                    command.Parameters.AddWithValue("StartTime", schedule.StartTime); // Use the derived time
+                    command.Parameters.AddWithValue("StartDateTime", schedule.StartDateTime);
+
+                    var rowsAffected = await command.ExecuteNonQueryAsync();
+                    if (rowsAffected == 0)
+                    {
+                        return NotFound();
+                    }
+                }
+            }
+
+            return NoContent();
+        }
+        [HttpDelete("deleteschedule/{id}")]
+        public async Task<ActionResult> DeleteSchedule(int id)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                string query = "DELETE FROM bus_schedules WHERE scheduleid = @ScheduleId";
+
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("ScheduleId", id);
+
+                    var rowsAffected = await command.ExecuteNonQueryAsync();
+                    if (rowsAffected == 0)
+                    {
+                        return NotFound();
+                    }
+                }
+            }
+
+            return NoContent();
         }
     }
 }

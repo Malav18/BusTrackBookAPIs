@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace BusTrackBookAPIs.Controllers
 {
-    [Authorize(Roles = "User")]
+    [Authorize(Policy = "UserOnly")]
     [Route("[controller]")]
     [ApiController]
     public class ContactController : ControllerBase

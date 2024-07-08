@@ -128,7 +128,7 @@ namespace BusTrackBookAPIs.Controllers
             <tr>
                 <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>Seats</th>
                 <td style='padding: 8px; border: 1px solid #ddd;'>
-                    {string.Join("<br>", bookingDetails.selectedSeats.Select(seat => $"Seat: {seat.seatNumber}, Name: {seat.name}, Phone: {seat.phoneNumber}"))}
+                    {string.Join("<br>", bookingDetails.selectedSeats.Select(seat => $"Seat: {seat.seatNo}, Name: {seat.name}, Phone: {seat.phoneNumber}"))}
                 </td>
             </tr>
         </table>
