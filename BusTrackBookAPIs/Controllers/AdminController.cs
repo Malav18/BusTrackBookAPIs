@@ -8,7 +8,7 @@ using System.Data;
 
 namespace BusTrackBookAPIs.Controllers
 {
-    //[Authorize(Policy = "AdminOnly")]
+    [Authorize(Policy = "AdminOnly")]
     [Route("[controller]")]
     [ApiController]
     public class AdminController : Controller
