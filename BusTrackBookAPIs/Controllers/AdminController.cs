@@ -23,7 +23,7 @@ namespace BusTrackBookAPIs.Controllers
             _connectionString = _configuration.GetConnectionString("DefaultConnection");
         }
 
-        [HttpGet]
+        [HttpGet("getalldrivers")]
         public async Task<ActionResult<IEnumerable<Driver>>> GetAllDrivers()
         {
             var drivers = new List<Driver>();
@@ -103,7 +103,7 @@ namespace BusTrackBookAPIs.Controllers
            
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("getdriverby/{id}")]
         public async Task<ActionResult<Driver>> GetDriverById(int id)
         {
             Driver driver = null;
@@ -112,7 +112,7 @@ namespace BusTrackBookAPIs.Controllers
             {
                 await connection.OpenAsync();
 
-                using (var command = new NpgsqlCommand("SELECT * FROM drivers WHERE driverid = @DriverId", connection))
+                using (var command = new NpgsqlCommand("SELECT * FROM drivers WHERE driverid = @DriverId  ", connection))
                 {
                     command.Parameters.AddWithValue("DriverId", id);
 
@@ -149,7 +149,7 @@ namespace BusTrackBookAPIs.Controllers
             return Ok(driver);
         }
 
-        [HttpPost]
+        [HttpPost("adddriver")]
         public async Task<ActionResult> AddDriver([FromBody] Driver driver)
         {
             using (var connection = new NpgsqlConnection(_connectionString))
@@ -167,8 +167,9 @@ namespace BusTrackBookAPIs.Controllers
                     command.Parameters.AddWithValue("@AddressState", driver.AddressState ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@AddressZipCode", driver.AddressZipCode ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@EmergencyContact", driver.EmergencyContact ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@IsDeleted", driver.IsDeleted);
                     command.Parameters.AddWithValue("@CreatedAt", DateTime.UtcNow);
-                    command.Parameters.AddWithValue("@IsDeleted", false);
+                   
                     driver.DriverId = (int)await command.ExecuteScalarAsync();
                 }
             }
@@ -176,31 +177,39 @@ namespace BusTrackBookAPIs.Controllers
             return CreatedAtAction(nameof(GetDriverById), new { id = driver.DriverId }, driver);
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("updatedriver/{id}")]
         public async Task<ActionResult> UpdateDriver(int id, [FromBody] Driver driver)
         {
+            if (id != driver.DriverId)
+            {
+                return BadRequest("Driver ID mismatch.");
+            }
+
             using (var connection = new NpgsqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
 
-                using (var command = new NpgsqlCommand("UPDATE drivers SET drivername = @DriverName, phonenumber = @PhoneNumber, drivinglicensenumber = @DrivingLicenseNumber, dateofbirth = @DateOfBirth, addressstreet = @AddressStreet, addresscity = @AddressCity, addressstate = @AddressState, addresszipcode = @AddressZipCode, emergencycontact = @EmergencyContact, modifiedat = @ModifiedAt WHERE driverid = @DriverId", connection))
+                using (var command = new NpgsqlCommand(
+                    "UPDATE drivers SET drivername = @DriverName, phonenumber = @PhoneNumber, drivinglicensenumber = @DrivingLicenseNumber, dateofbirth = @DateOfBirth, addressstreet = @AddressStreet, addresscity = @AddressCity, addressstate = @AddressState, addresszipcode = @AddressZipCode, emergencycontact = @EmergencyContact, isdeleted = @IsDeleted, modifiedat = @ModifiedAt WHERE driverid = @DriverId",
+                    connection))
                 {
-                    command.Parameters.AddWithValue("DriverId", id);
-                    command.Parameters.AddWithValue("DriverName", driver.DriverName);
-                    command.Parameters.AddWithValue("PhoneNumber", driver.PhoneNumber ?? (object)DBNull.Value);
-                    command.Parameters.AddWithValue("DrivingLicenseNumber", driver.DrivingLicenseNumber);
-                    command.Parameters.AddWithValue("@DateOfBirth", driver.DateOfBirth.HasValue ? driver.DateOfBirth.Value : (object)DBNull.Value);
-                    command.Parameters.AddWithValue("AddressStreet", driver.AddressStreet ?? (object)DBNull.Value);
-                    command.Parameters.AddWithValue("AddressCity", driver.AddressCity ?? (object)DBNull.Value);
-                    command.Parameters.AddWithValue("AddressState", driver.AddressState ?? (object)DBNull.Value);
-                    command.Parameters.AddWithValue("AddressZipCode", driver.AddressZipCode ?? (object)DBNull.Value);
-                    command.Parameters.AddWithValue("EmergencyContact", driver.EmergencyContact ?? (object)DBNull.Value);
-                    command.Parameters.AddWithValue("ModifiedAt", DateTime.UtcNow);
+                    command.Parameters.AddWithValue("@DriverId", id);
+                    command.Parameters.AddWithValue("@DriverName", driver.DriverName ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@PhoneNumber", driver.PhoneNumber ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@DrivingLicenseNumber", driver.DrivingLicenseNumber ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@DateOfBirth", driver.DateOfBirth.HasValue ? (object)driver.DateOfBirth.Value : DBNull.Value);
+                    command.Parameters.AddWithValue("@AddressStreet", driver.AddressStreet ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@AddressCity", driver.AddressCity ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@AddressState", driver.AddressState ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@AddressZipCode", driver.AddressZipCode ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@EmergencyContact", driver.EmergencyContact ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@IsDeleted", driver.IsDeleted);
+                    command.Parameters.AddWithValue("@ModifiedAt", DateTime.UtcNow);
 
                     var rowsAffected = await command.ExecuteNonQueryAsync();
                     if (rowsAffected == 0)
                     {
-                        return NotFound();
+                        return NotFound("Driver not found.");
                     }
                 }
             }
@@ -208,7 +217,8 @@ namespace BusTrackBookAPIs.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id}")]
+
+        [HttpDelete("deletedriver/{id}")]
         public async Task<ActionResult> DeleteDriver(int id)
         {
             using (var connection = new NpgsqlConnection(_connectionString))
@@ -482,30 +492,46 @@ namespace BusTrackBookAPIs.Controllers
 
             return NoContent();
         }
-
         [HttpPut("editroute")]
         public async Task<IActionResult> PutRoute(RouteModel route)
         {
-            using (NpgsqlConnection connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                await connection.OpenAsync();
-
-                string sql = "SELECT public.edit_route(@routeid, @routename, @startcityid, @endcityid, @isdeleted)";
-
-                using (NpgsqlCommand command = new NpgsqlCommand(sql, connection))
+                using (NpgsqlConnection connection = new NpgsqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@routeid", route.RouteId);
-                    command.Parameters.AddWithValue("@routename", route.RouteName);
-                    command.Parameters.AddWithValue("@startcityid", route.StartCityId);
-                    command.Parameters.AddWithValue("@endcityid", route.EndCityId);
-                    command.Parameters.AddWithValue("@isdeleted", route.IsDeleted);
+                    await connection.OpenAsync();
 
-                    await command.ExecuteNonQueryAsync();
+                    string sql = "UPDATE public.routes " +
+                                 "SET routename = @routename, " +
+                                 "    startcityid = @startcityid, " +
+                                 "    endcityid = @endcityid, " +
+                                  "    isdeleted = @isdeleted," +
+                                 "    modifiedat = CURRENT_TIMESTAMP " +
+                                 "WHERE routeid = @routeid";
+
+                    using (NpgsqlCommand command = new NpgsqlCommand(sql, connection))
+                    {
+                        command.Parameters.AddWithValue("@routeid", route.RouteId);
+                        command.Parameters.AddWithValue("@routename", route.RouteName);
+                        command.Parameters.AddWithValue("@startcityid", route.StartCityId);
+                        command.Parameters.AddWithValue("@endcityid", route.EndCityId);
+                        command.Parameters.AddWithValue("@isdeleted", route.IsDeleted);
+
+                        await command.ExecuteNonQueryAsync();
+                    }
                 }
-            }
 
-            return NoContent();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                Console.Error.WriteLine($"Exception occurred: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Database operation failed. Please try again later.");
+            }
         }
+
+
 
 
 
@@ -768,7 +794,6 @@ namespace BusTrackBookAPIs.Controllers
 
 
 
-
         [HttpPost("addbus")]
         public async Task<ActionResult> AddBus([FromBody] Bus bus)
         {
@@ -776,7 +801,7 @@ namespace BusTrackBookAPIs.Controllers
             {
                 await connection.OpenAsync();
 
-                using (var command = new NpgsqlCommand("INSERT INTO buses (busnumber, routeid, driverid, capacity, manufacturer, model, year, currentlocation, lastmaintenancedate, nextmaintenancedate, createdat, isdeleted) VALUES (@BusNumber, @RouteId, @DriverId, @Capacity, @Manufacturer, @Model, @Year, @CurrentLocation, @LastMaintenanceDate, @NextMaintenanceDate, @CreatedAt, @IsDeleted) RETURNING busid", connection))
+                using (var command = new NpgsqlCommand("INSERT INTO buses (busnumber, routeid, driverid, capacity, manufacturer, model, year, currentlocation, lastmaintenancedate, nextmaintenancedate) VALUES (@BusNumber, @RouteId, @DriverId, @Capacity, @Manufacturer, @Model, @Year, @CurrentLocation, @LastMaintenanceDate, @NextMaintenanceDate) RETURNING busid", connection))
                 {
                     command.Parameters.AddWithValue("@BusNumber", bus.BusNumber);
                     command.Parameters.AddWithValue("@RouteId", bus.RouteId ?? (object)DBNull.Value);
@@ -788,8 +813,6 @@ namespace BusTrackBookAPIs.Controllers
                     command.Parameters.AddWithValue("@CurrentLocation", bus.CurrentLocation ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@LastMaintenanceDate", bus.LastMaintenanceDate ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@NextMaintenanceDate", bus.NextMaintenanceDate ?? (object)DBNull.Value);
-                    command.Parameters.AddWithValue("@CreatedAt", DateTime.UtcNow);
-                    command.Parameters.AddWithValue("@IsDeleted", false);
 
                     bus.BusId = (int)await command.ExecuteScalarAsync();
                 }
@@ -801,8 +824,8 @@ namespace BusTrackBookAPIs.Controllers
 
 
 
-        [HttpPut("updatebus/{id}")]
-        public async Task<ActionResult> UpdateBus(int id, [FromBody] Bus bus)
+        [HttpPut("updatebus")]
+        public async Task<ActionResult> UpdateBus([FromBody] Bus bus)
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
@@ -810,7 +833,7 @@ namespace BusTrackBookAPIs.Controllers
 
                 using (var command = new NpgsqlCommand("UPDATE buses SET busnumber = @BusNumber, routeid = @RouteId, driverid = @DriverId, capacity = @Capacity, manufacturer = @Manufacturer, model = @Model, year = @Year, currentlocation = @CurrentLocation, lastmaintenancedate = @LastMaintenanceDate, nextmaintenancedate = @NextMaintenanceDate, modifiedat = @ModifiedAt WHERE busid = @BusId", connection))
                 {
-                    command.Parameters.AddWithValue("BusId", id);
+                    command.Parameters.AddWithValue("BusId", bus.BusId);
                     command.Parameters.AddWithValue("BusNumber", bus.BusNumber);
                     command.Parameters.AddWithValue("RouteId", bus.RouteId ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("DriverId", bus.DriverId ?? (object)DBNull.Value);
@@ -833,8 +856,6 @@ namespace BusTrackBookAPIs.Controllers
 
             return NoContent();
         }
-
-
 
         [HttpDelete("deletebus/{id}")]
         public async Task<ActionResult> DeleteBus(int id)
@@ -973,9 +994,9 @@ namespace BusTrackBookAPIs.Controllers
                 await connection.OpenAsync();
 
                 string query = @"
-            INSERT INTO bus_schedules (busid, start_date, start_time, start_date_time)
-            VALUES (@BusId, @StartDate, @StartTime, @StartDateTime)
-            RETURNING scheduleid";
+        INSERT INTO bus_schedules (busid, start_date, start_time, start_date_time)
+        VALUES (@BusId, @StartDate, @StartTime, @StartDateTime)
+        RETURNING scheduleid";
 
                 using (var command = new NpgsqlCommand(query, connection))
                 {
@@ -991,21 +1012,21 @@ namespace BusTrackBookAPIs.Controllers
             return CreatedAtAction(nameof(GetScheduleById), new { id = schedule.ScheduleId }, schedule);
         }
 
-        [HttpPut("updateschedule/{id}")]
-        public async Task<ActionResult> UpdateSchedule(int id, [FromBody] BusScheduleAddUpdate schedule)
+        [HttpPut("updateschedule")]
+        public async Task<ActionResult> UpdateSchedule([FromBody] BusScheduleAddUpdate schedule)
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
 
                 string query = @"
-    UPDATE bus_schedules
-    SET busid = @BusId, start_date = @StartDate, start_time = @StartTime, start_date_time = @StartDateTime
-    WHERE scheduleid = @ScheduleId";
+UPDATE bus_schedules
+SET busid = @BusId, start_date = @StartDate, start_time = @StartTime, start_date_time = @StartDateTime
+WHERE scheduleid = @ScheduleId";
 
                 using (var command = new NpgsqlCommand(query, connection))
                 {
-                    command.Parameters.AddWithValue("ScheduleId", id);
+                    command.Parameters.AddWithValue("ScheduleId", schedule.ScheduleId);
                     command.Parameters.AddWithValue("BusId", schedule.BusId);
                     command.Parameters.AddWithValue("StartDate", schedule.StartDate); // Use the derived date
                     command.Parameters.AddWithValue("StartTime", schedule.StartTime); // Use the derived time
