@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using BusTrackBookAPIs.Model;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
@@ -61,6 +62,135 @@ namespace BusTrackBookAPIs.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { error = "Failed to book tickets", message = ex.Message });
+            }
+        }
+
+
+        [HttpGet("getUpcomingBookings/{userId}")]
+        public async Task<IActionResult> GetUpcomingBookings(int userId)
+        {
+            try
+            {
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                var command = new NpgsqlCommand("SELECT * FROM public.get_upcoming_bookings(@p_userid)", connection);
+                command.Parameters.AddWithValue("@p_userid", userId);
+
+                using var reader = await command.ExecuteReaderAsync();
+
+                var upcomingBookings = new List<UpcomingBooking>();
+
+                while (await reader.ReadAsync())
+                {
+                    var seatDetailsJson = reader.GetString(reader.GetOrdinal("seat_details"));
+                    var seatDetails = JsonSerializer.Deserialize<List<SeatDetailsModel>>(seatDetailsJson);
+
+                    var booking = new UpcomingBooking
+                    {
+                        BookingId = reader.GetInt32(reader.GetOrdinal("bookingid")),
+                        UserId = reader.GetInt32(reader.GetOrdinal("userid")),
+                        ScheduleId = reader.GetInt32(reader.GetOrdinal("scheduleid")),
+                        BookingDate = reader.GetDateTime(reader.GetOrdinal("bookingdate")),
+                        BookingStatus = reader.GetString(reader.GetOrdinal("bookingstatus")),
+                        TotalAmount = reader.GetDecimal(reader.GetOrdinal("totalamount")),
+                        PaymentMethod = reader.GetString(reader.GetOrdinal("paymentmethod")),
+                        TransactionNumber = reader.GetString(reader.GetOrdinal("transactionnumber")),
+                        PnrNumber = reader.GetString(reader.GetOrdinal("pnrnumber")),
+                        IsCancelled = reader.GetBoolean(reader.GetOrdinal("iscancelled")),
+                        CancelledDate = reader.IsDBNull(reader.GetOrdinal("cancelleddate")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("cancelleddate")),
+                        CancellationReason = reader.IsDBNull(reader.GetOrdinal("cancellationreason")) ? null : reader.GetString(reader.GetOrdinal("cancellationreason")),
+                        RefundAmount = reader.IsDBNull(reader.GetOrdinal("refundamount")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("refundamount")),
+                        RefundTransactionId = reader.IsDBNull(reader.GetOrdinal("refundtransactionid")) ? null : reader.GetString(reader.GetOrdinal("refundtransactionid")),
+                        CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdat")),
+                        ModifiedAt = reader.IsDBNull(reader.GetOrdinal("modifiedat")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("modifiedat")),
+                        IsDeleted = reader.GetBoolean(reader.GetOrdinal("isdeleted")),
+                        StartSequenceNumber = reader.GetInt32(reader.GetOrdinal("startsequencenumber")),
+                        EndSequenceNumber = reader.GetInt32(reader.GetOrdinal("endsequencenumber")),
+                        StartDate = reader.GetDateTime(reader.GetOrdinal("startdate")),
+                        BusNumber = reader.GetString(reader.GetOrdinal("busnumber")),
+                        SeatDetails = seatDetails,
+                        RouteName = reader.GetString(reader.GetOrdinal("route_name")),
+                        StartCity = reader.GetString(reader.GetOrdinal("start_city")),
+                        EndCity = reader.GetString(reader.GetOrdinal("end_city")),
+                        StartTime = reader.GetTimeSpan(reader.GetOrdinal("start_time")),
+                        StartDateTime = reader.GetDateTime(reader.GetOrdinal("start_date_time"))
+                    };
+
+                    upcomingBookings.Add(booking);
+                }
+
+                return Ok(upcomingBookings);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Failed to retrieve upcoming bookings", message = ex.Message });
+            }
+        }
+
+
+
+
+
+        [HttpGet("getPastBookings/{userId}")]
+        public async Task<IActionResult> GetPastBookings(int userId)
+        {
+            try
+            {
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                var command = new NpgsqlCommand("SELECT * FROM public.get_past_bookings(@p_userid)", connection);
+                command.Parameters.AddWithValue("@p_userid", userId);
+
+                using var reader = await command.ExecuteReaderAsync();
+
+                var pastBookings = new List<PastBooking>();
+
+                while (await reader.ReadAsync())
+                {
+                    var seatDetailsJson = reader.GetString(reader.GetOrdinal("seat_details"));
+                    var seatDetails = JsonSerializer.Deserialize<List<SeatDetailsModel>>(seatDetailsJson);
+
+                    var booking = new PastBooking
+                    {
+                        BookingId = reader.GetInt32(reader.GetOrdinal("bookingid")),
+                        UserId = reader.GetInt32(reader.GetOrdinal("userid")),
+                        ScheduleId = reader.GetInt32(reader.GetOrdinal("scheduleid")),
+                        BookingDate = reader.GetDateTime(reader.GetOrdinal("bookingdate")),
+                        BookingStatus = reader.GetString(reader.GetOrdinal("bookingstatus")),
+                        TotalAmount = reader.GetDecimal(reader.GetOrdinal("totalamount")),
+                        PaymentMethod = reader.GetString(reader.GetOrdinal("paymentmethod")),
+                        TransactionNumber = reader.GetString(reader.GetOrdinal("transactionnumber")),
+                        PnrNumber = reader.GetString(reader.GetOrdinal("pnrnumber")),
+                        IsCancelled = reader.GetBoolean(reader.GetOrdinal("iscancelled")),
+                        CancelledDate = reader.IsDBNull(reader.GetOrdinal("cancelleddate")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("cancelleddate")),
+                        CancellationReason = reader.IsDBNull(reader.GetOrdinal("cancellationreason")) ? null : reader.GetString(reader.GetOrdinal("cancellationreason")),
+                        RefundAmount = reader.IsDBNull(reader.GetOrdinal("refundamount")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("refundamount")),
+                        RefundTransactionId = reader.IsDBNull(reader.GetOrdinal("refundtransactionid")) ? null : reader.GetString(reader.GetOrdinal("refundtransactionid")),
+                        CreatedAt = reader.GetDateTime(reader.GetOrdinal("createdat")),
+                        ModifiedAt = reader.IsDBNull(reader.GetOrdinal("modifiedat")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("modifiedat")),
+                        IsDeleted = reader.GetBoolean(reader.GetOrdinal("isdeleted")),
+                        StartSequenceNumber = reader.GetInt32(reader.GetOrdinal("startsequencenumber")),
+                        EndSequenceNumber = reader.GetInt32(reader.GetOrdinal("endsequencenumber")),
+                        StartDate = reader.GetDateTime(reader.GetOrdinal("startdate")),
+                        BusNumber = reader.GetString(reader.GetOrdinal("busnumber")),
+                        SeatDetails = seatDetails,
+                        RouteName = reader.GetString(reader.GetOrdinal("route_name")),
+                        StartCity = reader.GetString(reader.GetOrdinal("start_city")),
+                        EndCity = reader.GetString(reader.GetOrdinal("end_city")),
+                        StartTime = reader.GetTimeSpan(reader.GetOrdinal("start_time")),
+                        StartDateTime = reader.GetDateTime(reader.GetOrdinal("start_date_time"))
+                    };
+
+                    pastBookings.Add(booking);
+                }
+
+                return Ok(pastBookings);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Failed to retrieve past bookings", message = ex.Message });
             }
         }
     }
