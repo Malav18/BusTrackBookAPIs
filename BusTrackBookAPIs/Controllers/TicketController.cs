@@ -106,12 +106,12 @@ namespace BusTrackBookAPIs.Controllers
                 <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.endCity}</td>
             </tr>
             <tr>
-                <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>Start Date</th>
+                <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>Journey Date</th>
                 <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.startDate.ToString("yyyy-MM-dd")}</td>
             </tr>
             <tr>
-                <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>Start Time</th>
-                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.startDate}</td>
+                <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>Journey Start Time</th>
+                <td style='padding: 8px; border: 1px solid #ddd;'>{bookingDetails.startTime}</td>
             </tr>
             <tr>
                 <th style='text-align: left; padding: 8px; border: 1px solid #ddd;'>Total Fare</th>
@@ -132,7 +132,7 @@ namespace BusTrackBookAPIs.Controllers
                 </td>
             </tr>
         </table>
-        <p>If you have any questions or need further assistance, please contact us at support@example.com.</p>
+        <p>If you have any questions or need further assistance, please contact us at malav.amnex@gmail.com.</p>
         <p>Thank you for choosing our service!</p>
         <p>Best regards,<br>Amnex</p>
     </body>

@@ -212,6 +212,8 @@ namespace BusTrackBookAPIs.Controllers
         public int endSequenceNumber { get; set; }
         public string endCity { get; set; }
         public DateTime startDate { get; set; }
+
+        public TimeOnly? startTime { get; set; }
        
         public List<SeatDetails> selectedSeats { get; set; }
         public string pnr { get; set; }
