@@ -133,21 +133,21 @@ namespace BusTrackBookAPIs.Controllers
 
 
         [HttpGet("getPastBookings/{userId}")]
-        public async Task<IActionResult> GetPastBookings(int userId)
+        public  ActionResult<PastBooking> GetPastBookings(int userId)
         {
             try
             {
                 using var connection = new NpgsqlConnection(_connectionString);
-                await connection.OpenAsync();
+                 connection.Open();
 
                 var command = new NpgsqlCommand("SELECT * FROM public.get_past_bookings(@p_userid)", connection);
                 command.Parameters.AddWithValue("@p_userid", userId);
 
-                using var reader = await command.ExecuteReaderAsync();
+                using var reader =  command.ExecuteReader();
 
                 var pastBookings = new List<PastBooking>();
 
-                while (await reader.ReadAsync())
+                while ( reader.Read())
                 {
                     var seatDetailsJson = reader.GetString(reader.GetOrdinal("seat_details"));
                     var seatDetails = JsonSerializer.Deserialize<List<SeatDetailsModel>>(seatDetailsJson);
